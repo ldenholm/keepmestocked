@@ -7,39 +7,58 @@ const exphbs  = require('express-handlebars');
 const app = express();
 const path = require('path');
 const request = require('request');
+const bodyParser = require('body-parser');
 
 // configured for local + webhost env
 const PORT = process.env.PORT || 5000;
 
+// Body Parser middleware
+app.use(bodyParser.urlencoded({extended: false}));
+
 // IEX API Key pk_0c164efd8323488bbcfc96c5f2f2865d
-request('https://cloud.iexapis.com/stable/stock/fb/quote?token=pk_0c164efd8323488bbcfc96c5f2f2865d', { json: true }, (err, res, body) => {
+// making call api func
+function call_api(finishedAPI, ticker) {
+    request('https://cloud.iexapis.com/stable/stock/' + ticker + '/quote?token=pk_0c164efd8323488bbcfc96c5f2f2865d', { json: true }, (err, res, body) => {
     if (err) {
         return console.log(err);
     };
     if (res.statusCode === 200)
     {
-        console.log(body);
+        //console.log(body);
+        finishedAPI(body);
     };
 });
+}
 
 
 // Set handlebars middleware
 app.engine('handlebars', exphbs());
 app.set('view engine', 'handlebars');
 
-const otherstuff = "This is other stuff.!!>!>";
 
-// Set handlebar routes
+// Set handlebar GET routes
 // handlebar = easy backend - front end parsing of variables.
 app.get('/', function (req, res) {
-    res.render('home', {
-        stuff: otherstuff
-    });
+    call_api(function(doneAPI) {
+            res.render('home', {
+            stock: doneAPI
+        }); 
+    }, "fb");
 });
 
 // About.html routing
 app.get('/about.html', function (req, res) {
     res.render('about');
+});
+
+// Create POST route for searching
+app.post('/', function (req, res) {
+    call_api(function(doneAPI) {
+        //posted_stuff = req.body.stock_ticker;
+            res.render('home', {
+            stock: doneAPI,
+        }); 
+    }, req.body.stock_ticker);
 });
 
 // Set static folder 
